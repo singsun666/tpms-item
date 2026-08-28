@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TPMS 传感器数据</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --line: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --p1: #22c55e;
+      --t1: #f59e0b;
+      --p2: #3b82f6;
+      --t2: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+      padding: 20px;
+    }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .card h2 { margin: 0 0 12px; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+    .badge-a { background: rgba(34,197,94,.15); color: var(--p1); }
+    .badge-b { background: rgba(59,130,246,.15); color: var(--p2); }
+    .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .metric { text-align: center; }
+    .metric .label { font-size: 12px; color: var(--muted); }
+    .metric .value { font-size: 26px; font-weight: 700; margin-top: 2px; }
+    .gauge {
+      width: 130px;
+      height: 65px;
+      margin: 8px auto 0;
+      border-radius: 130px 130px 0 0;
+      background: conic-gradient(from 270deg at 50% 100%, var(--g, #22c55e) var(--pct, 0%), #334155 0%);
+      position: relative;
+      overflow: hidden;
+    }
+    .gauge::after {
+      content: "";
+      position: absolute;
+      inset: 8px 8px 0 8px;
+      border-radius: 122px 122px 0 0;
+      background: var(--card);
+    }
+    .gauge .gauge-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 2px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .chart-box {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .chart-box h2 { margin: 0 0 12px; font-size: 16px; }
+    canvas { width: 100%; height: 220px; display: block; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 8px; }
+    .legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .empty { color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center; }
+  </style>
+</head>
+<body>
+  <h1>TPMS 双向传感器数据</h1>
+  <div class="subtitle" id="subtitle">读取 NFC 标签中…</div>
+
+  <div class="cards">
+    <div class="card">
+      <h2><span class="badge badge-a">1号机</span> 远端 / 2号机发送</h2>
+      <div class="metrics">
+        <div class="metric">
+          <div class="label">压力</div>
+          <div class="value" id="p1">--</div>
+          <div class="gauge" style="--g: var(--p1)" id="g1"></div>
+        </div>
+        <div class="metric">
+          <div class="label">温度</div>
+          <div class="value" id="t1">--</div>
+          <div class="gauge" style="--g: var(--t1)" id="g2"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="badge badge-b">2号机</span> 远端 / 1号机发送</h2>
+      <div class="metrics">
+        <div class="metric">
+          <div class="label">压力</div>
+          <div class="value" id="p2">--</div>
+          <div class="gauge" style="--g: var(--p2)" id="g3"></div>
+        </div>
+        <div class="metric">
+          <div class="label">温度</div>
+          <div class="value" id="t2">--</div>
+          <div class="gauge" style="--g: var(--t2)" id="g4"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-box">
+    <h2>历史趋势（最近 50 次贴卡记录）</h2>
+    <canvas id="chart"></canvas>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--p1)"></span> 压力 1号机</span>
+      <span><span class="dot" style="background:var(--p2)"></span> 压力 2号机</span>
+      <span><span class="dot" style="background:var(--t1)"></span> 温度 1号机</span>
+      <span><span class="dot" style="background:var(--t2)"></span> 温度 2号机</span>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const sn = params.get('sn') || '';
+    const p1 = parseFloat(params.get('pressure1'));
+    const t1 = parseFloat(params.get('temp1'));
+    const p2 = parseFloat(params.get('pressure2'));
+    const t2 = parseFloat(params.get('temp2'));
+
+    document.getElementById('subtitle').textContent =
+      sn ? ('序列号 ' + sn + ' · 数据来自最近一次 NFC 贴卡') : '数据来自最近一次 NFC 贴卡';
+
+    function setVal(id, v, unit, decimals) {
+      const el = document.getElementById(id);
+      el.textContent = (Number.isFinite(v) ? v.toFixed(decimals) : '--') + (Number.isFinite(v) ? ' ' + unit : '');
+    }
+    function setGauge(id, v, max) {
+      const el = document.getElementById(id);
+      if (!Number.isFinite(v) || max <= 0) { el.style.setProperty('--pct', '0%'); return; }
+      const pct = Math.max(0, Math.min(100, v / max * 100));
+      el.style.setProperty('--pct', pct + '%');
+    }
+
+    setVal('p1', p1, 'psi', 2);
+    setVal('t1', t1, '°C', 2);
+    setVal('p2', p2, 'psi', 2);
+    setVal('t2', t2, '°C', 2);
+    setGauge('g1', p1, 100);
+    setGauge('g2', t1, 50);
+    setGauge('g3', p2, 100);
+    setGauge('g4', t2, 50);
+
+    // 历史记录：同一浏览器保留最近 50 次贴卡数据
+    const KEY = 'tpms_history_v1';
+    let history = [];
+    try { history = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { history = []; }
+    const valid = [p1, t1, p2, t2].every(Number.isFinite);
+    if (valid) {
+      history.push({ time: Date.now(), p1, t1, p2, t2 });
+      if (history.length > 50) history = history.slice(-50);
+      try { localStorage.setItem(KEY, JSON.stringify(history)); } catch (e) {}
+    }
+
+    const canvas = document.getElementById('chart');
+    const ctx = canvas.getContext('2d');
+    function draw() {
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
+      if (history.length < 2) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('贴卡 2 次以上后显示趋势曲线', w / 2, h / 2);
+        return;
+      }
+      const padL = 34, padR = 10, padT = 10, padB = 22;
+      const maxVal = Math.max(...history.map(r => Math.max(r.p1, r.p2, r.t1, r.t2)), 10);
+      const series = [
+        { key: 'p1', color: '#22c55e' },
+        { key: 'p2', color: '#3b82f6' },
+        { key: 't1', color: '#f59e0b' },
+        { key: 't2', color: '#ef4444' },
+      ];
+      function px(i) { return padL + (w - padL - padR) * i / (history.length - 1); }
+      function py(v) { return h - padB - (h - padT - padB) * v / maxVal; }
+      ctx.strokeStyle = '#334155';
+      ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, h - padB);
+      ctx.lineTo(w - padR, h - padB); ctx.stroke();
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+      ctx.fillText(maxVal.toFixed(0), padL - 5, padT + 4);
+      ctx.fillText('0', padL - 5, h - padB);
+      for (const s of series) {
+        ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.beginPath();
+        history.forEach((r, i) => {
+          const x = px(i), y = py(r[s.key]);
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+      const t0 = new Date(history[0].time), t1l = new Date(history[history.length - 1].time);
+      ctx.fillText(t0.toLocaleTimeString(), padL, h - 6);
+      ctx.fillText(t1l.toLocaleTimeString(), w - padR, h - 6);
+    }
+    draw();
+    window.addEventListener('resize', draw);
+  </script>
+</body>
+</html>
