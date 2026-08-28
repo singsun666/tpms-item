@@ -137,14 +137,35 @@
   <script>
     const params = new URLSearchParams(location.search);
     const sn = params.get('sn') || '';
+    const dev = params.get('dev') || '';
     const p1 = parseFloat(params.get('pressure1'));
     const t1 = parseFloat(params.get('temp1'));
     const p2 = parseFloat(params.get('pressure2'));
     const t2 = parseFloat(params.get('temp2'));
 
-    document.getElementById('subtitle').textContent = '数据来自最近一次 NFC 贴卡';
-    document.getElementById('sn1').textContent = sn || '--';
-    document.getElementById('sn2').textContent = sn || '--';
+    // 分别记住 1号机 / 2号机 标签的 UID（同一浏览器内持久保存）
+    const SN_KEY1 = 'tpms_uid_1';
+    const SN_KEY2 = 'tpms_uid_2';
+    let uid1 = '';
+    let uid2 = '';
+    try {
+      uid1 = localStorage.getItem(SN_KEY1) || '';
+      uid2 = localStorage.getItem(SN_KEY2) || '';
+    } catch (e) {}
+    if (dev === '1' && sn) {
+      uid1 = sn;
+      try { localStorage.setItem(SN_KEY1, uid1); } catch (e) {}
+    }
+    if (dev === '2' && sn) {
+      uid2 = sn;
+      try { localStorage.setItem(SN_KEY2, uid2); } catch (e) {}
+    }
+
+    let hint = dev ? '（当前为 ' + dev + '号机 标签）' : '';
+    if (!uid1 || !uid2) hint += ' · 两台各贴一次后两个 UID 都会显示';
+    document.getElementById('subtitle').textContent = '数据来自最近一次 NFC 贴卡' + hint;
+    document.getElementById('sn1').textContent = uid1 || '未记录';
+    document.getElementById('sn2').textContent = uid2 || '未记录';
 
     function setVal(id, v, unit, decimals) {
       const el = document.getElementById(id);
