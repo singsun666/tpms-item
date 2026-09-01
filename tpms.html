@@ -88,6 +88,7 @@
 <body>
   <h1>TPMS 双向传感器数据</h1>
   <div class="subtitle" id="subtitle">读取 NFC 标签中…</div>
+  <div class="subtitle">KV 值：<b id="kv" style="font-size:18px;color:#0F172A">--</b></div>
 
   <div class="cards">
     <div class="card">
@@ -142,6 +143,9 @@
     const t1 = parseFloat(params.get('temp1'));
     const p2 = parseFloat(params.get('pressure2'));
     const t2 = parseFloat(params.get('temp2'));
+    const kv = params.get('kv') || '';
+
+    document.getElementById('kv').textContent = kv || '--';
 
     // 分别记住 1号机 / 2号机 标签的 UID（同一浏览器内持久保存）
     const SN_KEY1 = 'tpms_uid_1';
