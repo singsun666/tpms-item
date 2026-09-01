@@ -27,6 +27,17 @@
     }
     h1 { font-size: 22px; margin: 0 0 4px; }
     .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+    .kv-badge {
+      display: inline-block;
+      margin: 0 0 14px;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: #0F172A;
+      color: #FFFFFF;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .kv-badge span { color: #22C55E; }
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
     .card {
       background: var(--card);
@@ -88,7 +99,7 @@
 <body>
   <h1>TPMS 双向传感器数据</h1>
   <div class="subtitle" id="subtitle">读取 NFC 标签中…</div>
-  <div class="subtitle">KV 值：<b id="kv" style="font-size:18px;color:#0F172A">--</b></div>
+  <div class="kv-badge">KV 值：<span id="kv">--</span></div>
 
   <div class="cards">
     <div class="card">
