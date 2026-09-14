@@ -27,17 +27,6 @@
     }
     h1 { font-size: 22px; margin: 0 0 4px; }
     .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
-    .kv-badge {
-      display: inline-block;
-      margin: 0 0 14px;
-      padding: 8px 18px;
-      border-radius: 999px;
-      background: #0F172A;
-      color: #FFFFFF;
-      font-size: 18px;
-      font-weight: 700;
-    }
-    .kv-badge span { color: #22C55E; }
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
     .card {
       background: var(--card);
@@ -99,8 +88,6 @@
 <body>
   <h1>TPMS 双向传感器数据</h1>
   <div class="subtitle" id="subtitle">读取 NFC 标签中…</div>
-  <div class="kv-badge">KV 值：<span id="kv">--</span></div>
-
   <div class="cards">
     <div class="card">
       <h2><span class="badge badge-a">1号机</span> 发送 <span class="sn">SN: <b id="sn1">--</b></span></h2>
@@ -154,10 +141,6 @@
     const t1 = parseFloat(params.get('temp1'));
     const p2 = parseFloat(params.get('pressure2'));
     const t2 = parseFloat(params.get('temp2'));
-    const kv = params.get('kv') || '';
-
-    document.getElementById('kv').textContent = kv || '--';
-
     // 分别记住 1号机 / 2号机 标签的 UID（同一浏览器内持久保存）
     const SN_KEY1 = 'tpms_uid_1';
     const SN_KEY2 = 'tpms_uid_2';
