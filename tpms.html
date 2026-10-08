@@ -15,6 +15,7 @@
       --t1: #f59e0b;
       --p2: #3b82f6;
       --t2: #ef4444;
+      --st: #a855f7;
     }
     * { box-sizing: border-box; }
     body {
@@ -41,6 +42,7 @@
     .sn { font-size: 12px; color: var(--muted); font-weight: normal; }
     .sn b { color: var(--text); font-weight: 600; }
     .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .metrics-1 { grid-template-columns: 1fr; }
     .metric { text-align: center; }
     .metric .label { font-size: 12px; color: var(--muted); }
     .metric .value { font-size: 26px; font-weight: 700; margin-top: 2px; }
@@ -120,6 +122,18 @@
         </div>
       </div>
     </div>
+
+    <div class="card">
+      <h2><span class="badge badge-a">1号机</span> 步数
+        <span class="sn">满量程 <b>8000</b> 步（由 1号机 计步后经无线同步）</span></h2>
+      <div class="metrics metrics-1">
+        <div class="metric">
+          <div class="label">累计步数</div>
+          <div class="value" id="st">--</div>
+          <div class="gauge" style="--g: var(--st)" id="g5"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="chart-box">
@@ -141,6 +155,10 @@
     const t1 = parseFloat(params.get('temp1'));
     const p2 = parseFloat(params.get('pressure2'));
     const t2 = parseFloat(params.get('temp2'));
+    // 步数：1号机（slave）计步，经 433MHz 回传给 2号机，两边标签都带这个字段
+    // （老固件/老标签没有 st 参数 -> NaN -> 显示 "--"）
+    const st = parseInt(params.get('st'), 10);
+    const STEP_FULL_SCALE = 8000;   // 步数仪表盘满量程
     // 分别记住 1号机 / 2号机 标签的 UID（同一浏览器内持久保存）
     const SN_KEY1 = 'tpms_uid_1';
     const SN_KEY2 = 'tpms_uid_2';
@@ -184,6 +202,8 @@
     setGauge('g2', t1, 50);
     setGauge('g3', p2, 100);
     setGauge('g4', t2, 50);
+    setVal('st', st, '步', 0);
+    setGauge('g5', st, STEP_FULL_SCALE);
 
     // 历史记录：同一浏览器保留最近 50 次贴卡数据
     const KEY = 'tpms_history_v1';
@@ -191,7 +211,7 @@
     try { history = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { history = []; }
     const valid = [p1, t1, p2, t2].every(Number.isFinite);
     if (valid) {
-      history.push({ time: Date.now(), p1, t1, p2, t2 });
+      history.push({ time: Date.now(), p1, t1, p2, t2, st: Number.isFinite(st) ? st : null });
       if (history.length > 50) history = history.slice(-50);
       try { localStorage.setItem(KEY, JSON.stringify(history)); } catch (e) {}
     }
