@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TPMS 傳感器數據</title>
+  <title>TPMS Sensor Data</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -88,19 +88,19 @@
   </style>
 </head>
 <body>
-  <h1>TPMS 雙向傳感器數據</h1>
-  <div class="subtitle" id="subtitle">讀取 NFC 標籤中…</div>
+  <h1>TPMS Two-Way Sensor Data</h1>
+  <div class="subtitle" id="subtitle">Reading NFC tag...</div>
   <div class="cards">
     <div class="card">
-      <h2><span class="badge badge-a">1號機</span> 發送 <span class="sn">SN: <b id="sn1">--</b></span></h2>
+      <h2><span class="badge badge-a">Unit 1</span> sends <span class="sn">SN: <b id="sn1">--</b></span></h2>
       <div class="metrics">
         <div class="metric">
-          <div class="label">壓力</div>
+          <div class="label">Pressure</div>
           <div class="value" id="p1">--</div>
           <div class="gauge" style="--g: var(--p1)" id="g1"></div>
         </div>
         <div class="metric">
-          <div class="label">溫度</div>
+          <div class="label">Temperature</div>
           <div class="value" id="t1">--</div>
           <div class="gauge" style="--g: var(--t1)" id="g2"></div>
         </div>
@@ -108,15 +108,15 @@
     </div>
 
     <div class="card">
-      <h2><span class="badge badge-b">2號機</span> 發送 <span class="sn">SN: <b id="sn2">--</b></span></h2>
+      <h2><span class="badge badge-b">Unit 2</span> sends <span class="sn">SN: <b id="sn2">--</b></span></h2>
       <div class="metrics">
         <div class="metric">
-          <div class="label">壓力</div>
+          <div class="label">Pressure</div>
           <div class="value" id="p2">--</div>
           <div class="gauge" style="--g: var(--p2)" id="g3"></div>
         </div>
         <div class="metric">
-          <div class="label">溫度</div>
+          <div class="label">Temperature</div>
           <div class="value" id="t2">--</div>
           <div class="gauge" style="--g: var(--t2)" id="g4"></div>
         </div>
@@ -124,11 +124,11 @@
     </div>
 
     <div class="card">
-      <h2><span class="badge badge-a">1號機</span> 步數
-        <span class="sn">滿量程 <b>8000</b> 步</span></h2>
+      <h2><span class="badge badge-a">Unit 1</span> Steps
+        <span class="sn">Full scale <b>8000</b> steps</span></h2>
       <div class="metrics metrics-1">
         <div class="metric">
-          <div class="label">累計步數</div>
+          <div class="label">Steps</div>
           <div class="value" id="st">--</div>
           <div class="gauge" style="--g: var(--st)" id="g5"></div>
         </div>
@@ -137,13 +137,13 @@
   </div>
 
   <div class="chart-box">
-    <h2>歷史趨勢（最近 50 次貼卡記錄）</h2>
+    <h2>Trend (last 50 taps)</h2>
     <canvas id="chart"></canvas>
     <div class="legend">
-      <span><span class="dot" style="background:var(--p1)"></span> 壓力 1號機</span>
-      <span><span class="dot" style="background:var(--p2)"></span> 壓力 2號機</span>
-      <span><span class="dot" style="background:var(--t1)"></span> 溫度 1號機</span>
-      <span><span class="dot" style="background:var(--t2)"></span> 溫度 2號機</span>
+      <span><span class="dot" style="background:var(--p1)"></span> Pressure U1</span>
+      <span><span class="dot" style="background:var(--p2)"></span> Pressure U2</span>
+      <span><span class="dot" style="background:var(--t1)"></span> Temperature U1</span>
+      <span><span class="dot" style="background:var(--t2)"></span> Temperature U2</span>
     </div>
   </div>
 
@@ -155,11 +155,11 @@
     const t1 = parseFloat(params.get('temp1'));
     const p2 = parseFloat(params.get('pressure2'));
     const t2 = parseFloat(params.get('temp2'));
-    // 步數：1號機（slave）計步，經 433MHz 回傳給 2號機，兩邊標籤都帶這個字段
-    // （老固件/老標籤沒有 st 參數 -> NaN -> 顯示 "--"）
+    // Steps: counted on unit 1 (slave), sent back to unit 2 over 433MHz;
+    // both tags carry this field (old firmware/tags have no st -> NaN -> "--")
     const st = parseInt(params.get('st'), 10);
-    const STEP_FULL_SCALE = 8000;   // 步數儀表盤滿量程
-    // 分別記住 1號機 / 2號機 標籤的 UID（同一瀏覽器內持久保存）
+    const STEP_FULL_SCALE = 8000;   // steps gauge full scale
+    // remember unit 1 / unit 2 tag UIDs separately (persisted per browser)
     const SN_KEY1 = 'tpms_uid_1';
     const SN_KEY2 = 'tpms_uid_2';
     let uid1 = '';
@@ -177,11 +177,11 @@
       try { localStorage.setItem(SN_KEY2, uid2); } catch (e) {}
     }
 
-    let hint = dev ? '（當前為 ' + dev + '號機 標籤）' : '';
-    if (!uid1 || !uid2) hint += ' · 兩台各貼一次後兩個 UID 都會顯示';
-    document.getElementById('subtitle').textContent = '數據來自最近一次 NFC 貼卡' + hint;
-    document.getElementById('sn1').textContent = uid1 || '未記錄';
-    document.getElementById('sn2').textContent = uid2 || '未記錄';
+    let hint = dev ? ' (Unit ' + dev + ' tag)' : '';
+    if (!uid1 || !uid2) hint += ' - tap both units once to show both UIDs';
+    document.getElementById('subtitle').textContent = 'Data from the last NFC tap' + hint;
+    document.getElementById('sn1').textContent = uid1 || 'not recorded';
+    document.getElementById('sn2').textContent = uid2 || 'not recorded';
 
     function setVal(id, v, unit, decimals) {
       const el = document.getElementById(id);
@@ -202,10 +202,10 @@
     setGauge('g2', t1, 50);
     setGauge('g3', p2, 100);
     setGauge('g4', t2, 50);
-    setVal('st', st, '步', 0);
+    setVal('st', st, 'steps', 0);
     setGauge('g5', st, STEP_FULL_SCALE);
 
-    // 歷史記錄：同一瀏覽器保留最近 50 次貼卡數據
+    // history: keep the last 50 taps in this browser
     const KEY = 'tpms_history_v1';
     let history = [];
     try { history = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { history = []; }
@@ -228,7 +228,7 @@
         ctx.fillStyle = '#94a3b8';
         ctx.font = '13px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('貼卡 2 次以上後顯示趨勢曲線', w / 2, h / 2);
+        ctx.fillText('Tap twice or more to see the trend curve', w / 2, h / 2);
         return;
       }
       const padL = 34, padR = 10, padT = 10, padB = 22;
